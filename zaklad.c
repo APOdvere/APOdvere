@@ -48,7 +48,7 @@ int has_correct_device_id(char* file_path, unsigned short device_id[2]) {
 }
 
 #define PATH_LEN 64
-#define CURRENT_PATH "/proc/bus/pci/"
+#define CURRENT_PATH "/sys/bus/pci/"
 #define CURRENT_PATH_LEN 14
 
 char* find_device(unsigned short device_id[2]) {
