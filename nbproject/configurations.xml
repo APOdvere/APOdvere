@@ -14,8 +14,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>apo-pci.c</itemPath>
-      <itemPath>apo-pci.h</itemPath>
       <itemPath>zaklad.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -40,10 +38,6 @@
       </toolsSet>
       <compileType>
       </compileType>
-      <item path="apo-pci.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="apo-pci.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="chmod_lcd.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="kbd_hw.h" ex="false" tool="3" flavor2="0">
@@ -71,10 +65,6 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
-      <item path="apo-pci.c" ex="false" tool="0" flavor2="0">
-      </item>
-      <item path="apo-pci.h" ex="false" tool="3" flavor2="0">
-      </item>
       <item path="chmod_lcd.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="kbd_hw.h" ex="false" tool="3" flavor2="0">
