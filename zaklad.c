@@ -1,5 +1,5 @@
-#define CTRL 0x8060
-#define POWER_ON 0x80
+#define CTRL 0x8080
+#define POWER_ON 0xFF
 #define POWER_OFF 0x00
 
 #include <stdio.h>
