@@ -62,11 +62,9 @@ char* find_device(unsigned short device_id[2]) {
 
     while ((file = readdir(base_dir)) != NULL) {
         if (strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..") == 0) { // this or parent directory
-            free(file);
             continue;
         }
         strcpy(current_path + CURRENT_PATH_LEN, file->d_name);
-        free(file);
 
         if ((subdir = opendir(current_path)) != NULL) {
             while ((file = readdir(subdir)) != NULL) {
@@ -78,8 +76,8 @@ char* find_device(unsigned short device_id[2]) {
                 int file_path_len = strlen(file_path);
                 file_path[file_path_len++] = '/';
                 strcpy(file_path + file_path_len, file->d_name);
-                free(file);
                 if (has_correct_device_id(file_path, device_id)) {
+                    free(file);
                     closedir(subdir);
                     free(subdir);
                     closedir(base_dir);
@@ -87,14 +85,14 @@ char* find_device(unsigned short device_id[2]) {
                     return file_path;
                 }
             }
-            closedir(subdir);
-            free(subdir);
         }
     }
 
+    free(file);
+    closedir(subdir);
+    free(subdir);
     closedir(base_dir);
     free(base_dir);
-    free(file_path);
     return NULL;
 }
 
