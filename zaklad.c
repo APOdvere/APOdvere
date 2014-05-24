@@ -1,6 +1,15 @@
 #define CTRL 0x8080
+#define ADDR 0x8060
+#define DATA_READ 0x8040
+#define DATA_WRITE 0x8020
 #define POWER_ON 0xFF
 #define POWER_OFF 0x00
+#define WR_ON 0xFD
+#define WR_OFF 0xFF
+#define CS_ON 0xBD
+#define CS_OFF 0xFD
+#define RD_ON 0xFE
+#define RD_OFF 0xFF
 
 #include <stdio.h>
 #include <sys/mman.h>
@@ -14,6 +23,7 @@
 
 char* dev_enable; //DEV_ENABLE "/sys/bus/pci/devices/0000:03:00.0/enable"
 uint32_t dev_address; //DEV_ADDRESS 0xfe8f0000
+unsigned char * base_address;
 
 int pciEnable(int isEnable) {
     char cen = (isEnable != 0) ? '1' : '0';
@@ -107,6 +117,41 @@ uint32_t read_device_address(char *file_path) {
     return address;
 }
 
+void write_to_address(unsigned char address, unsigned char data) {
+    *(base_address + ADDR) = address;
+    *(base_address + DATA_WRITE) = data;
+
+    *(base_address + CTRL) = WR_ON;
+    *(base_address + CTRL) = CS_ON;
+    usleep(10);
+    *(base_address + CTRL) = CS_OFF;
+    *(base_address + CTRL) = WR_OFF;
+}
+
+unsigned char read_from_address(unsigned char address) {
+    *(base_address + ADDR) = address;
+
+    *(base_address + CTRL) = RD_ON;
+    *(base_address + CTRL) = 0xBE;
+    usleep(10);
+    unsigned char data = *(base_address + DATA_READ);
+    *(base_address + CTRL) = 0xFE;
+    *(base_address + CTRL) = RD_OFF;
+    return data;
+}
+
+void turn_on_LED() {
+    write_to_address(BUS_LED_WR_o, POWER_ON);
+}
+
+void turn_off_LED() {
+    write_to_address(BUS_LED_WR_o, POWER_OFF);
+}
+
+void turn_off_piezo() {
+    write_to_address(0x03, 0x00);
+}
+
 int main() {
     int soubor = open("/dev/mem", O_RDWR | O_SYNC);
     if (soubor == -1) {
@@ -122,18 +167,21 @@ int main() {
     }
     dev_address = read_device_address(dev_enable);
 
-    // TODO: konstantu dev_address a delku 0x10000 musite najit prohledanim seznamu PCI zarizeni
-    unsigned char * base = mmap(NULL, 0x10000, PROT_WRITE | PROT_READ, MAP_SHARED, soubor, dev_address);
-    if (base == MAP_FAILED) {
+    base_address = mmap(NULL, 0x10000, PROT_WRITE | PROT_READ, MAP_SHARED, soubor, dev_address);
+    if (base_address == MAP_FAILED) {
         fprintf(stderr, "Failed to map memory.");
         return 2;
     }
 
     if (pciEnable(1)) {
-        *(base + CTRL) = POWER_ON; // zapni napajeni
-        sleep(1); // cekej 1 vterinu - kratsi doba cekani-hledejte: usleep, nanosleep
+        *(base_address + CTRL) = POWER_ON; // zapni napajeni
+        usleep(1000);
+        turn_off_piezo();
+        turn_on_LED();
+        usleep(1000); // wait 1s
+        turn_off_LED();
         // TODO: semestralni prace
-        *(base + CTRL) = POWER_OFF; // vypni napajeni
+        *(base_address + CTRL) = POWER_OFF; // vypni napajeni
     }
     pciEnable(0);
 
