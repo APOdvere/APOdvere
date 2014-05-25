@@ -49,7 +49,6 @@ int has_correct_device_id(char* file_path, unsigned short device_id[2]) {
     fread(id_ptr, 2, 1, file);
     fread(id_ptr + 1, 2, 1, file);
     fclose(file);
-    free(file);
     if (id_ptr[0] == device_id[0] && id_ptr[1] == device_id[1]) {
         return 1;
     } else {
@@ -108,7 +107,6 @@ uint32_t read_device_address(char *file_path) {
     fseek(file, 0x10, SEEK_SET);
     fread(&address, 4, 1, file);
     fclose(file);
-    free(file);
     return address;
 }
 
