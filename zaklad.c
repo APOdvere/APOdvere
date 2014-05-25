@@ -170,7 +170,7 @@ int main() {
         usleep(1000);
         turn_off_piezo();
         turn_on_LED();
-        usleep(1000); // wait 1s
+        usleep(1000000); // wait 1s
         turn_off_LED();
         // TODO: semestralni prace
         *(base_address + CTRL) = POWER_OFF; // vypni napajeni
