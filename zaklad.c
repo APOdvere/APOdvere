@@ -57,8 +57,8 @@ int has_correct_device_id(char* file_path, unsigned short device_id[2]) {
 }
 
 #define PATH_LEN 64
-#define CURRENT_PATH "/sys/bus/pci/"
-#define CURRENT_PATH_LEN 13
+#define CURRENT_PATH "/proc/bus/pci/"
+#define CURRENT_PATH_LEN 14
 
 char* find_device(unsigned short device_id[2]) {
     char current_path[PATH_LEN] = CURRENT_PATH;
@@ -85,7 +85,6 @@ char* find_device(unsigned short device_id[2]) {
                 file_path[file_path_len++] = '/';
                 strcpy(file_path + file_path_len, file->d_name);
                 if (has_correct_device_id(file_path, device_id)) {
-                    free(file);
                     closedir(subdir);
                     closedir(base_dir);
                     return file_path;
