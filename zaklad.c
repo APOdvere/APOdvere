@@ -24,15 +24,16 @@
 char* dev_enable; //DEV_ENABLE "/sys/bus/pci/devices/0000:03:00.0/enable"
 uint32_t dev_address; //DEV_ADDRESS 0xfe8f0000
 unsigned char * base_address;
+int gate_id;
 
 int pciEnable(int isEnable) {
     char cen = (isEnable != 0) ? '1' : '0';
     int enable = open(dev_enable, O_WRONLY);
     if (enable == -1) {
         if (cen == '1') {
-            fprintf(stderr, "Failed to enable PCI device.");
+            fprintf(stderr, "Failed to enable PCI device.\n");
         } else {
-            fprintf(stderr, "Failed to disable PCI device.");
+            fprintf(stderr, "Failed to disable PCI device.\n");
         }
         return 0;
     }
@@ -144,28 +145,34 @@ void turn_off_piezo() {
     write_to_address(0x03, 0x00);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        fprintf(stderr, "One argument expected (gate id).\n");
+        return 1;
+    }
+    gate_id = atoi(argv[1]);
     int soubor = open("/dev/mem", O_RDWR | O_SYNC);
     if (soubor == -1) {
-        fprintf(stderr, "Failed to access memory.");
+        fprintf(stderr, "Failed to access memory.\n");
         return 1;
     }
 
     unsigned short device_id[2] = {0x1172, 0x1f32};
     dev_enable = find_device(device_id);
     if (dev_enable == NULL) {
-        fprintf(stderr, "Failed to find device.");
+        fprintf(stderr, "Failed to find device.\n");
         return 1;
     }
     dev_address = read_device_address(dev_enable);
 
     base_address = mmap(NULL, 0x10000, PROT_WRITE | PROT_READ, MAP_SHARED, soubor, dev_address);
     if (base_address == MAP_FAILED) {
-        fprintf(stderr, "Failed to map memory.");
+        fprintf(stderr, "Failed to map memory.\n");
         return 2;
     }
 
     if (pciEnable(1)) {
+        printf("Gate %d is ready.\n", gate_id);
         *(base_address + CTRL) = POWER_ON; // zapni napajeni
         usleep(1000);
         turn_off_piezo();
