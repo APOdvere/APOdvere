@@ -59,7 +59,7 @@ int has_correct_device_id(char* file_path, unsigned short device_id[2]) {
 
 #define PATH_LEN 64
 #define CURRENT_PATH "/sys/bus/pci/"
-#define CURRENT_PATH_LEN 14
+#define CURRENT_PATH_LEN 13
 
 char* find_device(unsigned short device_id[2]) {
     char current_path[PATH_LEN] = CURRENT_PATH;
@@ -79,7 +79,6 @@ char* find_device(unsigned short device_id[2]) {
         if ((subdir = opendir(current_path)) != NULL) {
             while ((file = readdir(subdir)) != NULL) {
                 if (strcmp(file->d_name, ".") == 0 || strcmp(file->d_name, "..") == 0) { // this or parent directory
-                    free(file);
                     continue;
                 }
                 strcpy(file_path, current_path);
@@ -89,9 +88,7 @@ char* find_device(unsigned short device_id[2]) {
                 if (has_correct_device_id(file_path, device_id)) {
                     free(file);
                     closedir(subdir);
-                    free(subdir);
                     closedir(base_dir);
-                    free(base_dir);
                     return file_path;
                 }
             }
@@ -100,9 +97,7 @@ char* find_device(unsigned short device_id[2]) {
 
     free(file);
     closedir(subdir);
-    free(subdir);
     closedir(base_dir);
-    free(base_dir);
     return NULL;
 }
 
