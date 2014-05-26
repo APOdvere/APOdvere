@@ -1,0 +1,12 @@
+Jako argument se programu zadá číslo dveří.
+LED diody se rozsvítí na vteřinu.
+Na LCD se vypíše, že je brána připravena (proč ne číslo dveří?)
+
+Dokud nezmáčkne EXIT
+-požádá o ID
+-uživatel zadá ID ( a potvrdí enterem?) a id se vypisuje na LCD
+-požádá o PASS
+-uživatel zadá PASS ( a potvrdí enterem?) a PASS se vypisuje na LCD
+-pošle se dotaz na server a vyhodnotí jestli je OK a pipne
+
+-Cancel a Exit to zruší

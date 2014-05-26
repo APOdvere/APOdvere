@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=APO_semestralka
+PROJECTNAME=APOdvere
 
 # Active Configuration
 DEFAULTCONF=Debug

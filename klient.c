@@ -86,7 +86,7 @@ int recvMessage(int sfd, char *message) {
 
 int mainKlient(int argc, char *argv[]) {
     int sockfd, numbytes;
-    char buf2[MAXDATASIZE];
+    char buf[MAXDATASIZE];
     struct addrinfo hints;
 
 
@@ -106,11 +106,11 @@ int mainKlient(int argc, char *argv[]) {
         exit(1);
     }
 
-    if ((numbytes = recvMessage(sockfd, buf2)) <= 0) {
+    if ((numbytes = recvMessage(sockfd, buf)) <= 0) {
         //printf("Server nedostupny.\n");
     }
 
-    printf("Server: %s", buf2);
+    printf("Server: %s", buf);
 
 
     close(sockfd);

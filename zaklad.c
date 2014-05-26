@@ -19,6 +19,11 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <netdb.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <string.h>
 #include <dirent.h>
 #include "kbd_hw.h"
@@ -280,6 +285,128 @@ char read_key() {
     return k1;
 }
 
+/**
+ * Beep once for 0,5 s.
+ */
+void beepOK(){
+    write_to_address(BUS_KBD_WR_o, 0x80);
+    usleep(500000); //0,5 s
+    write_to_address(BUS_KBD_WR_o, 0x00);
+}
+
+/**
+ * Beep 3 times.
+ */
+void beepDenied(){
+    write_to_address(BUS_KBD_WR_o, 0x80);
+    usleep(1000000); //1 s
+    write_to_address(BUS_KBD_WR_o, 0x00);
+    
+    usleep(1000000); //1 s
+    
+    write_to_address(BUS_KBD_WR_o, 0x80);
+    usleep(1000000); //1 s
+    write_to_address(BUS_KBD_WR_o, 0x00);
+    
+    usleep(1000000); //1 s
+    
+    write_to_address(BUS_KBD_WR_o, 0x80);
+    usleep(1000000); //1 s
+    write_to_address(BUS_KBD_WR_o, 0x00);
+}
+
+#define MAXDATASIZE 256
+#define PORT "55556"
+#define HOST "127.0.0.1"
+
+/**
+ * Establish connection to adress and returns socket.
+ * @param address
+ * @param port
+ * @param hint
+ * @return 
+ */
+int getSocket(char *address, char *port, struct addrinfo hint) {
+    struct addrinfo *res, *p;
+    int r, sock_fd;
+
+    if ((r = getaddrinfo(address, port, &hint, &res)) != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(r));
+    }
+
+    for (p = res; p != NULL; p = p->ai_next) {
+        if ((sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sock_fd);
+            continue;
+        }
+
+        break;
+    }
+    if (p == NULL) {
+        return -1;
+    }
+    return sock_fd;
+}
+
+/**
+ * Send message to server.
+ * @param sfd
+ * @param gate_id
+ * @param user_id
+ * @param user_pin
+ * @return 
+ */
+int sendMessage(int sfd, int gate_id, int user_id, int user_pin) {
+    int sent = 0;
+    char message[64];
+    sprintf(message, "checkaccess %d %d %d\n", gate_id, user_id, user_pin);
+    int mlen = strlen(message);
+    int bytesleft = mlen;
+    int n;
+
+    while (sent < mlen) {
+        n = send(sfd, message + sent, bytesleft, 0);
+        if (n == -1) {
+            return -1;
+        }
+
+        sent += n;
+        bytesleft -= n;
+    }
+    return 0;
+}
+
+/**
+ * Receive server response.
+ * @param sfd
+ * @param message
+ * @return 
+ */
+int recvMessage(int sfd, char *message) {
+    int r;
+    while (1) {
+
+        r = recv(sfd, message, MAXDATASIZE, 0);
+
+        if (r == -1) {
+            return -1;
+        }
+        if (r == 0) {
+            return 0;
+        }
+        if (strstr(message, "\n") != NULL) {
+            message[r] = '\0';
+            return 1;
+        }
+    }
+
+}
+
 #define MAX_ID_LEN 6
 #define MAX_PASS_LEN 6
 
@@ -290,6 +417,9 @@ char read_key() {
  * @return
  */
 int main(int argc, char *argv[]) {
+    int sockfd, numbytes;
+    char buf[MAXDATASIZE];
+    struct addrinfo hints;
     int gate_id;
     char *dev_enable; //DEV_ENABLE "/sys/bus/pci/devices/0000:03:00.0/enable"
     unsigned short device_id[2] = {0x1172, 0x1f32}; //1172:1f32
@@ -323,6 +453,11 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to map memory.\n");
         return 2;
     }
+    
+    //setup for socket connection
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
 
     /*if (pciEnable(1, dev_enable)) {*/
     // turn on the device
@@ -408,6 +543,30 @@ int main(int argc, char *argv[]) {
         key = BLANK_KEY;
 
         // ask the server about the access and beep according its response
+        if ((sockfd = getSocket(HOST, PORT, hints)) == -1) {
+            fprintf(stderr, "Can't connect to server.\n");
+            return 1;
+        }
+        if ((sendMessage(sockfd, 55, 33, 3333)) == -1) {
+            fprintf(stderr, "Error sending to server.\n");
+            return 1;
+        }
+        if ((numbytes = recvMessage(sockfd, buf)) <= 0) {
+            fprintf(stderr, "Error response from server.\n");
+            return 1;
+        }
+        clear_LCD();
+        char *c1,*c2;
+        if((c1 = strstr(buf,"checkaccess"))!=NULL && (c2 = strstr(buf,"ok"))!=NULL){
+            //access OK
+            print_to_LCD("OK", 2, 1, 0);
+            beepOK();
+        }else{
+            //access denied
+            print_to_LCD("DENIED", 6, 1, 0);
+            beepDenied();
+        }
+        
     }
 
     // turn off the device
