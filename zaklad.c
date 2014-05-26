@@ -21,9 +21,9 @@
 #include "kbd_hw.h"
 #include "chmod_lcd.h"
 
-char* dev_enable; //DEV_ENABLE "/sys/bus/pci/devices/0000:03:00.0/enable"
+char *dev_enable; //DEV_ENABLE "/sys/bus/pci/devices/0000:03:00.0/enable"
 uint32_t dev_address; //DEV_ADDRESS 0xfe8f0000
-unsigned char * base_address;
+unsigned char *base_address;
 int gate_id;
 
 int pciEnable(int isEnable) {
@@ -145,6 +145,87 @@ void turn_off_piezo() {
     write_to_address(0x03, 0x00);
 }
 
+void clear_LCD() {
+    write_to_address(BUS_LCD_INST_o, CHMOD_LCD_CLR);
+    usleep(10000);
+}
+
+void turn_on_LCD() {
+    write_to_address(BUS_LCD_INST_o, CHMOD_LCD_MOD);
+    usleep(10000);
+    clear_LCD();
+    write_to_address(BUS_LCD_INST_o, CHMOD_LCD_DON);
+    usleep(10000);
+}
+
+void write_char_to_LCD(char c, int row, int pos) {
+    if (row == 1) {
+        pos = pos + 0x40;
+    }
+    write_to_address(BUS_LCD_INST_o, CHMOD_LCD_POS + pos);
+    write_to_address(BUS_LCD_WDATA_o, c);
+}
+
+void print_to_LCD(char * text, int len, int row, int start) {
+    int i;
+    for (i = start; i < len; i++) {
+        write_char_to_LCD(text[i], row, i);
+    }
+}
+
+void print_std_and_LCD(char *text, int text_len, int row, int start) {
+    printf("%s", text);
+    printf("\n");
+    print_to_LCD(text, text_len, row, start);
+}
+
+void print_std_and_LCD_from_start(char *text, int text_len, int row) {
+    print_std_and_LCD(text, text_len, row, 0);
+}
+
+#define ENTER_KEY 'e'
+#define CANCEL_KEY 'c'
+#define BLANK_KEY ' '
+#define EXIT_KEY 'x'
+
+char read_key_once() {
+    unsigned char columns[] = {0xB, 0xD, 0xE};
+    unsigned char rows[] = {0x1, 0x2, 0x4, 0x8, 0x10};
+    char key_map[4][3] = {
+        {'7', '8', '9'},
+        {'4', '5', '6'},
+        {'1', '2', '3'},
+        {ENTER_KEY, EXIT_KEY, CANCEL_KEY}
+    };
+    int i, j;
+    unsigned char read;
+
+    for (i = 0; i < 3; i++) {
+        write_to_address(BUS_KBD_WR_o, columns[i]); // write column
+
+        for (j = 0; j < 4; j++) {
+            read = read_from_address(BUS_KBD_RD_o);
+            if ((read & rows[j]) == 0) { // row active
+                return key_map[j][i];
+            }
+        }
+    }
+    return BLANK_KEY;
+}
+
+char read_key() {
+    char c1 = read_key_once(c1);
+    usleep(1000);
+    char c2 = read_key_once(c2);
+    if (c1 != c2) {
+        return BLANK_KEY;
+    }
+    return c1;
+}
+
+#define ID_LEN 6
+#define PASS_LEN 6
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         fprintf(stderr, "One argument expected (gate id).\n");
@@ -171,23 +252,81 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
-    if (pciEnable(1)) {
-        printf("Gate %d is ready.\n", gate_id);
-        *(base_address + CTRL) = POWER_ON; // zapni napajeni
-        usleep(1000);
-        turn_off_piezo();
-        turn_on_LED();
-        usleep(1000000); // wait 1s
-        turn_off_LED();
-        // TODO: semestralni prace
-        *(base_address + CTRL) = POWER_OFF; // vypni napajeni
+    /*if (pciEnable(1)) {*/
+    *(base_address + CTRL) = POWER_ON; // zapni napajeni
+    usleep(1000);
+    turn_off_piezo();
+    turn_on_LED();
+    usleep(1000000); // wait 1s
+    turn_off_LED();
+    turn_on_LCD();
+
+    printf("Gate %d is ready.\n", gate_id);
+    print_to_LCD("Gate is ready.", 14, 0, 0);
+    usleep(1000000); // wait 1s
+    clear_LCD();
+
+    char *id = (char*) malloc(ID_LEN * sizeof (char));
+    char *pass = (char*) malloc(PASS_LEN * sizeof (char));
+    char c;
+    c = BLANK_KEY;
+
+    while (c != EXIT_KEY) {
+        c = BLANK_KEY;
+        clear_LCD();
+
+        print_to_LCD("ID: ", 4, 0, 0);
+        printf("ID: ");
+        int id_len = 0;
+        while (c != ENTER_KEY && c != CANCEL_KEY && c != EXIT_KEY && id_len < ID_LEN) {
+            usleep(100000); // wait 0.1s
+            c = read_key();
+            if (c == BLANK_KEY) {
+                continue;
+            }
+            if (c != ENTER_KEY && c != CANCEL_KEY && c != EXIT_KEY) {
+                id[id_len] = c;
+                write_char_to_LCD(c, 0, 4 + id_len);
+                id_len++;
+            }
+            usleep(400000); // wait 0.4s
+        }
+        id[id_len] = '\0';
+        printf("%s", id);
+        printf("\n");
+        if (c == CANCEL_KEY) {
+            continue;
+        } else if (c == EXIT_KEY) {
+            break;
+        }
+        c = BLANK_KEY;
+
+        print_to_LCD("PASS: ", 6, 1, 0);
+        printf("PASS: ");
+        int pass_len = 0;
+        while (c != ENTER_KEY && c != CANCEL_KEY && c != EXIT_KEY && id_len < PASS_LEN) {
+            usleep(100000); // wait 0.1s
+            c = read_key();
+            if (c == BLANK_KEY) {
+                continue;
+            }
+            if (c != ENTER_KEY && c != CANCEL_KEY && c != EXIT_KEY) {
+                pass[pass_len] = c;
+                write_char_to_LCD(c, 1, 6 + pass_len);
+                pass_len++;
+            }
+            usleep(400000); // wait 0.4s
+        }
+        pass[pass_len] = '\0';
+        printf("%s", pass);
+        printf("\n");
     }
-    pciEnable(0);
+
+    *(base_address + CTRL) = POWER_OFF; // vypni napajeni
+    /*}
+    pciEnable(0);*/
 
     return 0;
 }
 
-//TODO: Podprogram pro zapis/cteni bytu na emulovane PCI sbernici
-//+TODO: cteni klavesnice,
-//+TODO zapis na LCD
 //+TODO: program automatu na jizdenky
