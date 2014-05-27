@@ -183,6 +183,13 @@ void turn_off_LED() {
 }
 
 /**
+ * Turn on piezo on the device.
+ */
+void turn_on_piezo() {
+    write_to_address(0x03, 0x80);
+}
+
+/**
  * Turn off piezo on the device.
  */
 void turn_off_piezo() {
@@ -229,9 +236,9 @@ void write_char_to_LCD(char c, int row, int position) {
  * @param row
  * @param start
  */
-void print_to_LCD(char * text, int text_length, int row, int start) {
+void print_to_LCD(char * text, int text_length, int row) {
     int i;
-    for (i = start; i < text_length; i++) {
+    for (i = 0; i < text_length; i++) {
         write_char_to_LCD(text[i], row, i);
     }
 }
@@ -286,33 +293,34 @@ char read_key() {
 }
 
 /**
- * Beep once for 0,5 s.
+ * Beep once for 0,15s.
+ */
+void beepKey() {
+    write_to_address(0x03, 0x80);
+    usleep(150000); //0,15 s
+    write_to_address(0x03, 0x00);
+}
+
+/**
+ * Beep once for 0,3 s.
  */
 void beepOK() {
-    write_to_address(BUS_KBD_WR_o, 0x80);
-    usleep(500000); //0,5 s
-    write_to_address(BUS_KBD_WR_o, 0x00);
+    write_to_address(0x03, 0x80);
+    usleep(300000); //0,3 s
+    write_to_address(0x03, 0x00);
 }
 
 /**
  * Beep 3 times.
  */
 void beepDenied() {
-    write_to_address(BUS_KBD_WR_o, 0x80);
-    usleep(1000000); //1 s
-    write_to_address(BUS_KBD_WR_o, 0x00);
-
-    usleep(1000000); //1 s
-
-    write_to_address(BUS_KBD_WR_o, 0x80);
-    usleep(1000000); //1 s
-    write_to_address(BUS_KBD_WR_o, 0x00);
-
-    usleep(1000000); //1 s
-
-    write_to_address(BUS_KBD_WR_o, 0x80);
-    usleep(1000000); //1 s
-    write_to_address(BUS_KBD_WR_o, 0x00);
+    int i;
+    for (i = 0; i < 3; i++) {
+        write_to_address(0x03, 0x80);
+        usleep(500000); //0.5 s
+        write_to_address(0x03, 0x00);
+        usleep(500000); //0.5 s
+    }
 }
 
 #define MAXDATASIZE 256
@@ -478,7 +486,7 @@ int main(int argc, char *argv[]) {
     strcpy(gate_ready, "Gate ");
     strcat(gate_ready, argv[1]);
     strcat(gate_ready, " ready.");
-    print_to_LCD(gate_ready, strlen(gate_ready), 0, 0);
+    print_to_LCD(gate_ready, strlen(gate_ready), 0);
     usleep(1000000); // wait 1s
 
     // prepare strings for the ID and password
@@ -491,7 +499,7 @@ int main(int argc, char *argv[]) {
         key = BLANK_KEY;
 
         // ask for the user ID and read it from keys
-        print_to_LCD("ID: ", 4, 0, 0);
+        print_to_LCD("ID: ", 4, 0);
         printf("ID: ");
         int id_len = 0;
         while (id_len < MAX_ID_LEN) {
@@ -500,7 +508,12 @@ int main(int argc, char *argv[]) {
             if (key == BLANK_KEY) {
                 continue;
             }
-            if (key == ENTER_KEY || key == CANCEL_KEY || key == EXIT_KEY) {
+            beepKey();
+            if (key == ENTER_KEY) {
+                usleep(500000); // wait 0.5s
+                break;
+            }
+            if (key == CANCEL_KEY || key == EXIT_KEY) {
                 break;
             }
             id[id_len] = key;
@@ -519,7 +532,7 @@ int main(int argc, char *argv[]) {
         key = BLANK_KEY;
 
         // ask for the password and read it from keys
-        print_to_LCD("PASS: ", 6, 1, 0);
+        print_to_LCD("PASS: ", 6, 1);
         printf("PASS: ");
         int pass_len = 0;
         while (pass_len < MAX_PASS_LEN) {
@@ -528,11 +541,12 @@ int main(int argc, char *argv[]) {
             if (key == BLANK_KEY) {
                 continue;
             }
+            beepKey();
             if (key == ENTER_KEY || key == CANCEL_KEY || key == EXIT_KEY) {
                 break;
             }
             pass[pass_len] = key;
-            write_char_to_LCD(key, 1, 6 + pass_len);
+            write_char_to_LCD('*', 1, 6 + pass_len);
             pass_len++;
             usleep(400000); // wait 0.4s
         }
@@ -545,32 +559,41 @@ int main(int argc, char *argv[]) {
             continue;
         }
         key = BLANK_KEY;
+        clear_LCD();
 
         // ask the server about the access and beep according its response
         if ((sockfd = getSocket(HOST, PORT, hints)) == -1) {
             fprintf(stderr, "Can't connect to server.\n");
-            return 1;
+            print_to_LCD("ERROR: No server", 16, 0);
+            print_to_LCD("     connection.", 16, 1);
+            usleep(2000000); // wait 2s
+            break;
         }
-        if ((sendMessage(sockfd, 55, 33, 3333)) == -1) {
+        if ((sendMessage(sockfd, gate_id, atoi(id), atoi(pass))) == -1) {
             fprintf(stderr, "Error sending to server.\n");
-            return 1;
+            print_to_LCD("ERROR:   Sending", 16, 0);
+            print_to_LCD("      to server.", 16, 1);
+            usleep(2000000); // wait 2s
+            break;
         }
         if ((numbytes = recvMessage(sockfd, buf)) <= 0) {
             fprintf(stderr, "Error response from server.\n");
-            return 1;
+            print_to_LCD("ERROR:  Response", 16, 0);
+            print_to_LCD("    from server.", 16, 1);
+            usleep(2000000); // wait 2s
+            break;
         }
-        clear_LCD();
+
         char *c1, *c2;
-        if ((c1 = strstr(buf, "checkaccess")) != NULL && (c2 = strstr(buf, "ok")) != NULL) {
+        if ((c1 = strstr(buf, "OK")) != NULL) {
             //access OK
-            print_to_LCD("OK", 2, 1, 0);
+            print_to_LCD("OK", 2, 1);
             beepOK();
         } else {
             //access denied
-            print_to_LCD("DENIED", 6, 1, 0);
+            print_to_LCD("DENIED", 6, 1);
             beepDenied();
         }
-
     }
 
     // turn off the device
