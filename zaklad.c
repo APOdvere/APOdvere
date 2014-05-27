@@ -477,7 +477,7 @@ int main(int argc, char *argv[]) {
     char gate_ready[20];
     strcpy(gate_ready, "Gate ");
     strcat(gate_ready, argv[1]);
-    strcat(gate_ready, " is ready.");
+    strcat(gate_ready, " ready.");
     print_to_LCD(gate_ready, strlen(gate_ready), 0, 0);
     usleep(1000000); // wait 1s
 
