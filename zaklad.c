@@ -205,12 +205,11 @@ void clear_LCD() {
 }
 
 /**
- * Turn on LCD on the device (clear included).
+ * Turn on LCD on the device.
  */
 void turn_on_LCD() {
     write_to_address(BUS_LCD_INST_o, CHMOD_LCD_MOD);
     usleep(10000);
-    clear_LCD();
     write_to_address(BUS_LCD_INST_o, CHMOD_LCD_DON);
     usleep(10000);
 }
@@ -270,7 +269,7 @@ char read_key_once() {
         write_to_address(BUS_KBD_WR_o, columns[c]);
         data = read_from_address(BUS_KBD_RD_o);
         for (r = 0; r < ROWS; r++) {
-            if ((data & rows[r]) == 0) {
+            if (!(data & rows[r])) {
                 return key_map[r][c];
             }
         }
@@ -477,8 +476,9 @@ int main(int argc, char *argv[]) {
     turn_on_LED();
     usleep(1000000);
     turn_off_LED();
-    // turn on the LCD (and clear it))
+    // turn on the LCD
     turn_on_LCD();
+    clear_LCD();
 
     // print the device is ready
     printf("Gate %d is ready.\n", gate_id);
