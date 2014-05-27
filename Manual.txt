@@ -1,6 +1,6 @@
 Jako argument se programu zadá číslo dveří.
 LED diody se rozsvítí na vteřinu.
-Na LCD se vypíše, že je brána připravena (proč ne číslo dveří?)
+Na LCD se vypíše, že je brána připravena
 
 Dokud nezmáčkne EXIT
 -požádá o ID

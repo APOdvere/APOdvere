@@ -288,7 +288,7 @@ char read_key() {
 /**
  * Beep once for 0,5 s.
  */
-void beepOK(){
+void beepOK() {
     write_to_address(BUS_KBD_WR_o, 0x80);
     usleep(500000); //0,5 s
     write_to_address(BUS_KBD_WR_o, 0x00);
@@ -297,19 +297,19 @@ void beepOK(){
 /**
  * Beep 3 times.
  */
-void beepDenied(){
+void beepDenied() {
     write_to_address(BUS_KBD_WR_o, 0x80);
     usleep(1000000); //1 s
     write_to_address(BUS_KBD_WR_o, 0x00);
-    
+
     usleep(1000000); //1 s
-    
+
     write_to_address(BUS_KBD_WR_o, 0x80);
     usleep(1000000); //1 s
     write_to_address(BUS_KBD_WR_o, 0x00);
-    
+
     usleep(1000000); //1 s
-    
+
     write_to_address(BUS_KBD_WR_o, 0x80);
     usleep(1000000); //1 s
     write_to_address(BUS_KBD_WR_o, 0x00);
@@ -324,7 +324,7 @@ void beepDenied(){
  * @param address
  * @param port
  * @param hint
- * @return 
+ * @return
  */
 int getSocket(char *address, char *port, struct addrinfo hint) {
     struct addrinfo *res, *p;
@@ -359,7 +359,7 @@ int getSocket(char *address, char *port, struct addrinfo hint) {
  * @param gate_id
  * @param user_id
  * @param user_pin
- * @return 
+ * @return
  */
 int sendMessage(int sfd, int gate_id, int user_id, int user_pin) {
     int sent = 0;
@@ -385,7 +385,7 @@ int sendMessage(int sfd, int gate_id, int user_id, int user_pin) {
  * Receive server response.
  * @param sfd
  * @param message
- * @return 
+ * @return
  */
 int recvMessage(int sfd, char *message) {
     int r;
@@ -453,7 +453,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to map memory.\n");
         return 2;
     }
-    
+
     //setup for socket connection
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
@@ -474,7 +474,11 @@ int main(int argc, char *argv[]) {
 
     // print the device is ready
     printf("Gate %d is ready.\n", gate_id);
-    print_to_LCD("Gate is ready.", 14, 0, 0);
+    char gate_ready[20];
+    strcpy(gate_ready, "Gate ");
+    strcat(gate_ready, argv[1]);
+    strcat(gate_ready, " is ready.");
+    print_to_LCD(gate_ready, strlen(gate_ready), 0, 0);
     usleep(1000000); // wait 1s
 
     // prepare strings for the ID and password
@@ -556,17 +560,17 @@ int main(int argc, char *argv[]) {
             return 1;
         }
         clear_LCD();
-        char *c1,*c2;
-        if((c1 = strstr(buf,"checkaccess"))!=NULL && (c2 = strstr(buf,"ok"))!=NULL){
+        char *c1, *c2;
+        if ((c1 = strstr(buf, "checkaccess")) != NULL && (c2 = strstr(buf, "ok")) != NULL) {
             //access OK
             print_to_LCD("OK", 2, 1, 0);
             beepOK();
-        }else{
+        } else {
             //access denied
             print_to_LCD("DENIED", 6, 1, 0);
             beepDenied();
         }
-        
+
     }
 
     // turn off the device
