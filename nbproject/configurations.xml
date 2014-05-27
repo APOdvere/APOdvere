@@ -14,7 +14,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>klient.c</itemPath>
       <itemPath>zaklad.c</itemPath>
     </logicalFolder>
     <logicalFolder name="TestFiles"
@@ -43,8 +42,6 @@
       </item>
       <item path="kbd_hw.h" ex="false" tool="3" flavor2="0">
       </item>
-      <item path="klient.c" ex="false" tool="0" flavor2="0">
-      </item>
       <item path="zaklad.c" ex="false" tool="0" flavor2="0">
       </item>
     </conf>
@@ -71,8 +68,6 @@
       <item path="chmod_lcd.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="kbd_hw.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="klient.c" ex="false" tool="0" flavor2="0">
       </item>
       <item path="zaklad.c" ex="false" tool="0" flavor2="0">
       </item>
