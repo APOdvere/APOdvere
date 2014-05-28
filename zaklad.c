@@ -112,10 +112,11 @@ char* find_device(unsigned short device_id[2]) {
                     return file_path;
                 }
             }
+			closedir(subdir);
         }
     }
 
-    closedir(subdir);
+    
     closedir(base_dir);
     return NULL;
 }
@@ -396,6 +397,7 @@ int sendMessage(int sfd, int gate_id, int user_id, int user_pin) {
  */
 int recvMessage(int sfd, char *message) {
     int r;
+	int len = 0;
     while (1) {
 
         r = recv(sfd, message, MAXDATASIZE, 0);
@@ -406,8 +408,9 @@ int recvMessage(int sfd, char *message) {
         if (r == 0) {
             return 0;
         }
+		len += r;
+		message[len] = '\0';
         if (strstr(message, "\n") != NULL) {
-            message[r] = '\0';
             return 1;
         }
     }
@@ -574,6 +577,7 @@ int main(int argc, char *argv[]) {
             print_to_LCD("ERROR:   Sending", 16, 0);
             print_to_LCD("      to server.", 16, 1);
             usleep(2000000); // wait 2s
+			close(sockfd);
             break;
         }
         if ((numbytes = recvMessage(sockfd, buf)) <= 0) {
@@ -581,10 +585,11 @@ int main(int argc, char *argv[]) {
             print_to_LCD("ERROR:  Response", 16, 0);
             print_to_LCD("    from server.", 16, 1);
             usleep(2000000); // wait 2s
+			close(sockfd);
             break;
         }
 
-        char *c1, *c2;
+        char *c1;
         if ((c1 = strstr(buf, "OK")) != NULL) {
             //access OK
             print_to_LCD("OK", 2, 1);
@@ -594,6 +599,7 @@ int main(int argc, char *argv[]) {
             print_to_LCD("DENIED", 6, 1);
             beepDenied();
         }
+		close(sockfd);
     }
 
     // turn off the device
