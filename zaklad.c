@@ -112,11 +112,11 @@ char* find_device(unsigned short device_id[2]) {
                     return file_path;
                 }
             }
-			closedir(subdir);
+            closedir(subdir);
         }
     }
 
-    
+
     closedir(base_dir);
     return NULL;
 }
@@ -397,7 +397,7 @@ int sendMessage(int sfd, int gate_id, int user_id, int user_pin) {
  */
 int recvMessage(int sfd, char *message) {
     int r;
-	int len = 0;
+    int len = 0;
     while (1) {
 
         r = recv(sfd, message, MAXDATASIZE, 0);
@@ -408,8 +408,8 @@ int recvMessage(int sfd, char *message) {
         if (r == 0) {
             return 0;
         }
-		len += r;
-		message[len] = '\0';
+        len += r;
+        message[len] = '\0';
         if (strstr(message, "\n") != NULL) {
             return 1;
         }
@@ -506,14 +506,13 @@ int main(int argc, char *argv[]) {
         printf("ID: ");
         int id_len = 0;
         while (id_len < MAX_ID_LEN) {
-            usleep(100000); // wait 0.1s
+            usleep(200000); // wait 0.2s
             key = read_key();
             if (key == BLANK_KEY) {
                 continue;
             }
             beepKey();
             if (key == ENTER_KEY) {
-                usleep(500000); // wait 0.5s
                 break;
             }
             if (key == CANCEL_KEY || key == EXIT_KEY) {
@@ -522,7 +521,6 @@ int main(int argc, char *argv[]) {
             id[id_len] = key;
             write_char_to_LCD(key, 0, 4 + id_len);
             id_len++;
-            usleep(400000); // wait 0.4s
         }
         // print the provided ID on stdout
         id[id_len] = '\0';
@@ -539,7 +537,7 @@ int main(int argc, char *argv[]) {
         printf("PASS: ");
         int pass_len = 0;
         while (pass_len < MAX_PASS_LEN) {
-            usleep(100000); // wait 0.1s
+            usleep(200000); // wait 0.2s
             key = read_key();
             if (key == BLANK_KEY) {
                 continue;
@@ -551,7 +549,6 @@ int main(int argc, char *argv[]) {
             pass[pass_len] = key;
             write_char_to_LCD('*', 1, 6 + pass_len);
             pass_len++;
-            usleep(400000); // wait 0.4s
         }
         // print the provided ID on stdout
         pass[pass_len] = '\0';
@@ -577,7 +574,7 @@ int main(int argc, char *argv[]) {
             print_to_LCD("ERROR:   Sending", 16, 0);
             print_to_LCD("      to server.", 16, 1);
             usleep(2000000); // wait 2s
-			close(sockfd);
+            close(sockfd);
             break;
         }
         if ((numbytes = recvMessage(sockfd, buf)) <= 0) {
@@ -585,7 +582,7 @@ int main(int argc, char *argv[]) {
             print_to_LCD("ERROR:  Response", 16, 0);
             print_to_LCD("    from server.", 16, 1);
             usleep(2000000); // wait 2s
-			close(sockfd);
+            close(sockfd);
             break;
         }
 
@@ -599,7 +596,7 @@ int main(int argc, char *argv[]) {
             print_to_LCD("DENIED", 6, 1);
             beepDenied();
         }
-		close(sockfd);
+        close(sockfd);
     }
 
     // turn off the device
